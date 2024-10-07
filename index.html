@@ -64,8 +64,28 @@
             });
         }
 
+        function convertTo24Hour(time) {
+            const [fullTime, modifier] = time.split(' ');
+            let [hours, minutes, seconds] = fullTime.split(':');
+            
+            if (hours === '12') {
+                hours = '00'; // Handle midnight
+            }
+        
+            if (modifier === 'PM') {
+                hours = parseInt(hours, 10) + 12; // Convert PM hours to 24-hour format
+            }
+        
+            return `${hours}:${minutes}:${seconds}`;
+        }
+
         fetchSheetData().then(data => {
-            const labels = data.slice(1).map(row => new Date(`${row[0]}T${row[1]}`)); // Combine date and time into datetime
+            const labels = data.slice(1).map(row => {
+                const date = row[0]; // Date in YYYY/MM/DD format
+                const time = row[1]; // Time in h:mm:ss AM/PM format
+                const datetime = new Date(`${date} ${convertTo24Hour(time)}`);
+                return datetime;
+            });
             const tempData = data.slice(1).map(row => parseFloat(row[2])); // Third column is temperature
             const humData = data.slice(1).map(row => parseFloat(row[3])); // Fourth column is humidity
             console.log(data);
