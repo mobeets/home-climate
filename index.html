@@ -68,6 +68,8 @@
             const labels = data.slice(1).map(row => new Date(`${row[0]}T${row[1]}`)); // Combine date and time into datetime
             const tempData = data.slice(1).map(row => parseFloat(row[2])); // Third column is temperature
             const humData = data.slice(1).map(row => parseFloat(row[3])); // Fourth column is humidity
+            console.log(data);
+            console.log(labels);
 
             createChart(labels, tempData, humData);
         });
