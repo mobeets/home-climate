@@ -5,7 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Temperature & Humidity Data</title>
+    <!-- Chart.js and the date-fns adapter for date handling -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 </head>
 <body>
     <h2>Temperature & Humidity Over Time</h2>
@@ -44,12 +46,12 @@
                 options: {
                     scales: {
                         x: {
-                            type: 'time', // Use time as x-axis type
+                            type: 'time',
                             time: {
                                 unit: 'minute',
-                                tooltipFormat: 'YYYY-MM-DD HH:mm',
+                                tooltipFormat: 'yyyy-MM-dd HH:mm',
                                 displayFormats: {
-                                    minute: 'YYYY-MM-DD HH:mm'
+                                    minute: 'yyyy-MM-dd HH:mm'
                                 }
                             },
                             title: {
