@@ -40,14 +40,32 @@
                             fill: false,
                         }
                     ]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            type: 'time', // Use time as x-axis type
+                            time: {
+                                unit: 'minute',
+                                tooltipFormat: 'YYYY-MM-DD HH:mm',
+                                displayFormats: {
+                                    minute: 'YYYY-MM-DD HH:mm'
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Datetime'
+                            }
+                        }
+                    }
                 }
             });
         }
 
         fetchSheetData().then(data => {
-            const labels = data.slice(1).map(row => row[0]); // Assuming first column is time
-            const tempData = data.slice(1).map(row => parseFloat(row[1])); // Assuming second column is temperature
-            const humData = data.slice(1).map(row => parseFloat(row[2])); // Assuming third column is humidity
+            const labels = data.slice(1).map(row => new Date(`${row[0]}T${row[1]}`)); // Combine date and time into datetime
+            const tempData = data.slice(1).map(row => parseFloat(row[2])); // Third column is temperature
+            const humData = data.slice(1).map(row => parseFloat(row[3])); // Fourth column is humidity
 
             createChart(labels, tempData, humData);
         });
