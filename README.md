@@ -1,5 +1,18 @@
 # home-climate
 
+## hardware
+
+- WEMOS D1 Mini (ESP8266) [$2]
+- DHT22 [$2]
+- PMS5003 [$13]
+- dupont female-female cables [$2]
+- ventilated plastic enclosure, 108x56x40mm [$2]
+- USB-C power supply
+
+All costs are from AliExpress.
+If your ESP8266 doesn't come with headers already attached, you'll need a soldering iron and solder.
+If your PMS5003 has a GH1.25 cable, you'll need wire strippers and electrical tape to splice it with the dupont cables in order to plug it into the ESP8266.
+
 ## dependencies
 
 - [HTTPSRedirect](https://github.com/electronicsguy/HTTPSRedirect)
