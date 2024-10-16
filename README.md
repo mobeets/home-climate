@@ -11,7 +11,7 @@
 
 All costs are from AliExpress.
 If your ESP8266 doesn't come with headers already attached, you'll need a soldering iron and solder.
-If your PMS5003 has a GH1.25 cable, you'll need wire strippers and electrical tape to splice it with the dupont cables in order to plug it into the ESP8266.
+If your PMS5003 has a GH1.25 cable, you'll need wire strippers and electrical tape to splice it with the dupont cables in order to plug it into the ESP8266. Honestly though the wires are so thin and fiddly that it's worth spending $3 to buy an adapter to convert the JST 1.25mm 8-pin cable to 2.54mm for dupont.
 
 ## dependencies
 
