@@ -1,0 +1,98 @@
+<!-- https://docs.google.com/spreadsheets/d/e/2PACX-1vQS2FrpotQSiYeB3y1s2A7NfBh9h-19_QReOnXJ8P1uC0o3UZ3up-H8MmwfK98Pru-p-DTTtzTrIZH3/pub?gid=0&single=true&output=csv -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temperature & Humidity Data</title>
+    <!-- Chart.js and the date-fns adapter for date handling -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+</head>
+<body>
+    <h2>Temperature & Humidity Over Time</h2>
+    <canvas id="dataChart" width="400" height="200"></canvas>
+    
+    <script>
+        const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQS2FrpotQSiYeB3y1s2A7NfBh9h-19_QReOnXJ8P1uC0o3UZ3up-H8MmwfK98Pru-p-DTTtzTrIZH3/pub?gid=0&single=true&output=csv';
+
+        async function fetchSheetData() {
+            const response = await fetch(sheetUrl);
+            const data = await response.text();
+            return data.split('\n').map(row => row.split(',')); // Process CSV
+        }
+
+        function createChart(labels, tempData, humData) {
+            const ctx = document.getElementById('dataChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Temperature',
+                            data: tempData,
+                            borderColor: 'rgb(255, 99, 132)',
+                            fill: false,
+                        },
+                        {
+                            label: 'Humidity',
+                            data: humData,
+                            borderColor: 'rgb(54, 162, 235)',
+                            fill: false,
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'minute',
+                                tooltipFormat: 'yyyy-MM-dd HH:mm',
+                                displayFormats: {
+                                    minute: 'yyyy-MM-dd HH:mm'
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Datetime'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function convertTo24Hour(time) {
+            const [fullTime, modifier] = time.split(' ');
+            let [hours, minutes, seconds] = fullTime.split(':');
+            
+            if (hours === '12') {
+                hours = '00'; // Handle midnight
+            }
+        
+            if (modifier === 'PM') {
+                hours = parseInt(hours, 10) + 12; // Convert PM hours to 24-hour format
+            }
+        
+            return `${hours}:${minutes}:${seconds}`;
+        }
+
+        fetchSheetData().then(data => {
+            const labels = data.slice(1).map(row => {
+                const date = row[0]; // Date in YYYY/MM/DD format
+                const time = row[1]; // Time in h:mm:ss AM/PM format
+                const datetime = new Date(`${date} ${convertTo24Hour(time)}`);
+                return datetime;
+            });
+            const tempData = data.slice(1).map(row => parseFloat(row[2])); // Third column is temperature
+            const humData = data.slice(1).map(row => parseFloat(row[3])); // Fourth column is humidity
+            // console.log(data);
+            // console.log(labels);
+
+            createChart(labels, tempData, humData);
+        });
+    </script>
+</body>
+</html>
