@@ -1,98 +1,100 @@
-<!-- https://docs.google.com/spreadsheets/d/e/2PACX-1vQS2FrpotQSiYeB3y1s2A7NfBh9h-19_QReOnXJ8P1uC0o3UZ3up-H8MmwfK98Pru-p-DTTtzTrIZH3/pub?gid=0&single=true&output=csv -->
+<!-- https://docs.google.com/spreadsheets/d/1xvuWuXq-Sv5DiOpLmMu9FD9NHat3dILGr39eNHIXJsU/edit?pli=1&gid=1858751997#gid=1858751997 -->
 <!DOCTYPE html>
-<html lang="en">
-<head>
+<html>
+  <head>
+    <title>Home Climate</title>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Temperature & Humidity Data</title>
-    <!-- Chart.js and the date-fns adapter for date handling -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-</head>
-<body>
-    <h2>Temperature & Humidity Over Time</h2>
-    <canvas id="dataChart" width="400" height="200"></canvas>
-    
-    <script>
-        const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQS2FrpotQSiYeB3y1s2A7NfBh9h-19_QReOnXJ8P1uC0o3UZ3up-H8MmwfK98Pru-p-DTTtzTrIZH3/pub?gid=0&single=true&output=csv';
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+      // Load the Visualization API and the corechart package
+      google.charts.load('current', { packages: ['corechart', 'controls', 'line'] });
 
-        async function fetchSheetData() {
-            const response = await fetch(sheetUrl);
-            const data = await response.text();
-            return data.split('\n').map(row => row.split(',')); // Process CSV
+      // Set a callback to run when the API is loaded
+      google.charts.setOnLoadCallback(drawChart);
+
+      function drawChart() {
+        // URL to fetch Google Sheets data in CSV format (update with your sheet ID and range)
+        const query = new google.visualization.Query(
+          'https://docs.google.com/spreadsheets/d/1xvuWuXq-Sv5DiOpLmMu9FD9NHat3dILGr39eNHIXJsU/gviz/tq?sheet=Humid2&range=A1:C10000'
+        );
+
+        query.send(handleQueryResponse);
+      }
+
+      function handleQueryResponse(response) {
+        if (response.isError()) {
+          console.error('Error fetching data: ' + response.getMessage());
+          return;
         }
 
-        function createChart(labels, tempData, humData) {
-            const ctx = document.getElementById('dataChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Temperature',
-                            data: tempData,
-                            borderColor: 'rgb(255, 99, 132)',
-                            fill: false,
-                        },
-                        {
-                            label: 'Humidity',
-                            data: humData,
-                            borderColor: 'rgb(54, 162, 235)',
-                            fill: false,
-                        }
-                    ]
-                },
-                options: {
-                    scales: {
-                        x: {
-                            type: 'time',
-                            time: {
-                                unit: 'minute',
-                                tooltipFormat: 'yyyy-MM-dd HH:mm',
-                                displayFormats: {
-                                    minute: 'yyyy-MM-dd HH:mm'
-                                }
-                            },
-                            title: {
-                                display: true,
-                                text: 'Datetime'
-                            }
-                        }
-                    }
-                }
-            });
+        const data = response.getDataTable();
+
+        // Convert the first column (Datetime) to JavaScript Date objects
+        for (let i = 0; i < data.getNumberOfRows(); i++) {
+          data.setValue(i, 0, new Date(data.getValue(i, 0)));
         }
 
-        function convertTo24Hour(time) {
-            const [fullTime, modifier] = time.split(' ');
-            let [hours, minutes, seconds] = fullTime.split(':');
-            
-            if (hours === '12') {
-                hours = '00'; // Handle midnight
+        // Create a dashboard
+        const dashboard = new google.visualization.Dashboard(
+          document.getElementById('dashboard_div')
+        );
+
+        // Create a date range filter
+        const dateRangeFilter = new google.visualization.ControlWrapper({
+          controlType: 'ChartRangeFilter',
+          containerId: 'filter_div',
+          options: {
+            filterColumnIndex: 0,
+            ui: {
+              chartType: 'LineChart',
+              chartOptions: {
+                height: 50,
+                hAxis: { format: 'MM/dd/yyyy' },
+                colors: ['#5C3292']
+              },
+              minRangeSize: 86400000 // Minimum range size (1 day)
             }
-        
-            if (modifier === 'PM') {
-                hours = parseInt(hours, 10) + 12; // Convert PM hours to 24-hour format
-            }
-        
-            return `${hours}:${minutes}:${seconds}`;
-        }
-
-        fetchSheetData().then(data => {
-            const labels = data.slice(1).map(row => {
-                const date = row[0]; // Date in YYYY/MM/DD format
-                const time = row[1]; // Time in h:mm:ss AM/PM format
-                const datetime = new Date(`${date} ${convertTo24Hour(time)}`);
-                return datetime;
-            });
-            const tempData = data.slice(1).map(row => parseFloat(row[2])); // Third column is temperature
-            const humData = data.slice(1).map(row => parseFloat(row[3])); // Fourth column is humidity
-            // console.log(data);
-            // console.log(labels);
-
-            createChart(labels, tempData, humData);
+          }
         });
+
+        // Create a line chart for temperature and humidity
+        const lineChart = new google.visualization.ChartWrapper({
+          chartType: 'LineChart',
+          containerId: 'chart_div',
+          options: {
+            title: '',
+            curveType: 'function',
+            legend: { position: 'bottom' },
+            hAxis: {
+              title: '',
+              format: 'MM/dd/yyyy HH:mm',
+              gridlines: { count: -1 }
+            },
+            vAxes: {
+              0: { title: 'Temperature (°F)', format: 'decimal' },
+              1: { title: 'Humidity (%)', format: 'decimal' }
+            },
+            series: {
+              0: { targetAxisIndex: 0 }, // Temperature on the first vertical axis
+              1: { targetAxisIndex: 1 }  // Humidity on the second vertical axis
+            }
+          }
+        });
+
+        // Bind the date range filter and the line chart to the dashboard
+        dashboard.bind(dateRangeFilter, lineChart);
+
+        // Draw the dashboard with the data
+        dashboard.draw(data);
+      }
     </script>
-</body>
+  </head>
+  <body>
+    <div id="dashboard_div" style="width: 100%; height: 600px;">
+      <!-- Filter control for date range -->
+      <div id="filter_div" style="height: 100px;"></div>
+      <!-- Chart container -->
+      <div id="chart_div" style="height: 500px;"></div>
+    </div>
+  </body>
 </html>
