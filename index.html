@@ -15,7 +15,7 @@
       function drawChart() {
         // URL to fetch Google Sheets data in CSV format (update with your sheet ID and range)
         const query = new google.visualization.Query(
-          'https://docs.google.com/spreadsheets/d/1xvuWuXq-Sv5DiOpLmMu9FD9NHat3dILGr39eNHIXJsU/gviz/tq?sheet=Humid2&range=A1:C10000'
+          'https://docs.google.com/spreadsheets/d/1xvuWuXq-Sv5DiOpLmMu9FD9NHat3dILGr39eNHIXJsU/gviz/tq?sheet=Humid1&range=A1:C20000'
         );
 
         query.send(handleQueryResponse);
@@ -89,6 +89,7 @@
 
         // Draw the dashboard with the data
         dashboard.draw(data);
+        console.log(data);
       }
     </script>
   </head>

@@ -1,4 +1,5 @@
 #include <ESP8266WiFi.h>
+// #include <ESP8266WebServer.h>
 #include "DHT.h"
 #include "HTTPSRedirect.h"
 
@@ -7,18 +8,17 @@
 //#define DHTTYPE DHT21   // DHT 21 (AM2301)
 #define DHTTYPE DHT22  // DHT 22  (AM2302), AM2321
 
-// DHT Sensor
-uint8_t DHTPin = D2;
+const int secsBetweenLogs = 5*60;
 
 /*Put your SSID & Password*/
-const char* ssid = "YourSSID"; // TODO: Enter SSID here
-const char* password = "YourPassword"; // TODO: Enter Password here
+const char* ssid = ""; // TODO
+const char* password = ""; // TODO
 
 // For writing to Google Sheets
 const char *GScriptId = ""; // TODO
 
 // Enter command (insert_row or append_row) and your Google Sheets sheet name (default is Sheet1):
-String payload_base =  "{\"command\": \"insert_row\", \"sheet_name\": \"Sheet1\", \"values\": ";
+String payload_base =  "{\"command\": \"insert_row\", \"sheet_name\": \"Humid1\", \"values\": ";
 String payload = "";
 
 // Google Sheets setup (do not edit)
@@ -27,6 +27,9 @@ const int httpsPort = 443;
 const char* fingerprint = "";
 String url = String("/macros/s/") + GScriptId + "/exec";
 HTTPSRedirect* client = nullptr;
+
+// DHT Sensor
+uint8_t DHTPin = D2;
 
 // Initialize DHT sensor.
 DHT dht(DHTPin, DHTTYPE);
@@ -95,44 +98,53 @@ void setup() {
 }
 void loop() {
 
-  // Temperature = 0.0;
-  // Humidity = 0.0;
-  Temperature = (dht.readTemperature() * 9/5) + 32;  // Gets the values of the temperature
-  Humidity = dht.readHumidity();        // Gets the values of the humidity
+  int nTries = 0;
+  Temperature = -1;
+  Humidity = -1;
+  while ((isnan(Temperature) || isnan(Humidity) || Humidity < 0) && (nTries < 20)) {
+    Temperature = (dht.readTemperature() * 9/5) + 32;  // Gets the values of the temperature
+    Humidity = dht.readHumidity();        // Gets the values of the humidity
+    nTries++;
+    delay(100);
+  }
   Serial.println("Temperature: " + String(Temperature) + "°F, Humidity: " + String(Humidity) + "%");
   
-  static bool flag = false;
-  if (!flag){
-    client = new HTTPSRedirect(httpsPort);
-    client->setInsecure();
-    flag = true;
-    client->setPrintResponseBody(true);
-    client->setContentTypeHeader("application/json");
-  }
-  if (client != nullptr){
-    if (!client->connected()){
-      client->connect(host, httpsPort);
+  if (Temperature > 0) {
+    static bool flag = false;
+    if (!flag){
+      client = new HTTPSRedirect(httpsPort);
+      client->setInsecure();
+      flag = true;
+      client->setPrintResponseBody(true);
+      client->setContentTypeHeader("application/json");
     }
-  }
-  else{
-    Serial.println("Error creating client object!");
-  }
-  
-  // Create json object string to send to Google Sheets
-  payload = payload_base + "\"" + Temperature + "," + Humidity + "\"}";
-  
-  // Publish data to Google Sheets
-  Serial.println("Publishing data...");
-  Serial.println(payload);
-  if(client->POST(url, host, payload)){ 
-    // do stuff here if publish was successful
-    Serial.println("Successfully published");
-  }
-  else{
-    // do stuff here if publish was not successful
-    Serial.println("Error while connecting");
+    if (client != nullptr){
+      if (!client->connected()){
+        client->connect(host, httpsPort);
+      }
+    }
+    else{
+      Serial.println("Error creating client object!");
+    }
+    
+    // Create json object string to send to Google Sheets
+    payload = payload_base + "[" + Temperature + "," + Humidity + "]}";
+    
+    // Publish data to Google Sheets
+    Serial.println("Publishing data...");
+    Serial.println(payload);
+    if(client->POST(url, host, payload)){ 
+      // do stuff here if publish was successful
+      Serial.println("Successfully published");
+    }
+    else{
+      // do stuff here if publish was not successful
+      Serial.println("Error while connecting");
+    }
+  } else {
+    Serial.println("No data this round. Waiting...");
   }
 
   // a delay of several seconds is required before publishing again    
-  delay(10*60*1000); // ten minutes
+  delay(secsBetweenLogs*1000);
 }
