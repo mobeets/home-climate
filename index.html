@@ -1,4 +1,3 @@
-<!-- https://docs.google.com/spreadsheets/d/1xvuWuXq-Sv5DiOpLmMu9FD9NHat3dILGr39eNHIXJsU/edit?pli=1&gid=1858751997#gid=1858751997 -->
 <!DOCTYPE html>
 <html>
   <head>
@@ -6,19 +5,28 @@
     <meta charset="UTF-8">
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript" src="plot.js"/></script>
+    <link rel="stylesheet" href="styles.css">
   </head>
   <body>
-    <div id="dashboard_div0" style="width: 100%; height: 500px;">
-      <!-- Filter control for date range -->
-      <div id="filter_div0" style="padding-bottom: 0;"></div>
-      <!-- Chart container -->
-      <div id="chart_div0" style="height: 80%;"></div>
+    <div class="tab">
+      <button class="tablinks" data-name="Anole">Upstairs</button>
+      <button class="tablinks" data-name="Catole">Downstairs</button>
     </div>
-    <div id="dashboard_div1" style="width: 100%; height: 500px;">
+
+    <!-- Temperature and Humidity -->
+    <div id="dashboard_div0" class="dashboard">
       <!-- Filter control for date range -->
-      <div id="filter_div1" style="padding-bottom: 0;"></div>
+      <div id="filter_div0" class="filter"></div>
       <!-- Chart container -->
-      <div id="chart_div1" style="height: 80%;"></div>
+      <div id="chart_div0" class="chart"></div>
+    </div>
+
+    <!-- Particle counts -->
+    <div id="dashboard_div1" class="dashboard">
+      <!-- Filter control for date range -->
+      <div id="filter_div1" class="filter"></div>
+      <!-- Chart container -->
+      <div id="chart_div1" class="chart"></div>
     </div>
   </body>
 </html>

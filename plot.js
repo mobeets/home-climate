@@ -1,15 +1,20 @@
-let charts = ['https://docs.google.com/spreadsheets/d/1xvuWuXq-Sv5DiOpLmMu9FD9NHat3dILGr39eNHIXJsU/gviz/tq?sheet=Anole&range=A1:A20000,L1:M20000', 'https://docs.google.com/spreadsheets/d/1xvuWuXq-Sv5DiOpLmMu9FD9NHat3dILGr39eNHIXJsU/gviz/tq?sheet=Anole&range=A1:A20000,B1:I20000'];
+let sheetName = 'Anole';
+let sheetId = '1xvuWuXq-Sv5DiOpLmMu9FD9NHat3dILGr39eNHIXJsU';
+let chartRanges = ['A1:A20000,L1:M20000', 'A1:A20000,B1:G20000'];
 
 // Load the Visualization API and the corechart package
 google.charts.load('current', { packages: ['corechart', 'controls', 'line'] });
 
 // Set a callback to run when the API is loaded
-google.charts.setOnLoadCallback(function() { drawChart(0); });
-google.charts.setOnLoadCallback(function() { drawChart(1); });
+google.charts.setOnLoadCallback(function() { drawChart(sheetName, 0); });
+google.charts.setOnLoadCallback(function() { drawChart(sheetName, 1); });
 
-function drawChart(chart_index) {
+function drawChart(sheetName, chart_index) {
   // URL to fetch Google Sheets data in CSV format (update with your sheet ID and range)
-  const query = new google.visualization.Query(charts[chart_index]);
+
+  let chartUrl = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/gviz/tq?sheet=' + sheetName + '&range=' + chartRanges[chart_index];
+  console.log(chartUrl);
+  const query = new google.visualization.Query(chartUrl);
 
   query.send(function(response){ handleQueryResponse(response, chart_index) });
 }
@@ -46,7 +51,7 @@ function handleQueryResponse(response, chart_index) {
           height: 50,
           hAxis: { format: 'MM/dd/yyyy HH:mm',
             'baselineColor': 'none'},
-          chartArea: { 'width': '70%' },
+          chartArea: { 'width': '70%', 'height': '90%' },
         },
         minRangeSize: 0.5*86400000 // 12 hours in milliseconds
       }
@@ -92,3 +97,31 @@ function handleQueryResponse(response, chart_index) {
   dashboard.draw(data);
   console.log(data);
 }
+
+// JavaScript to select and mark an element as active
+function setActiveByDataValue(value) {
+    // Remove 'active' class from all elements with 'tablinks' class
+    document.querySelectorAll('.tablinks.active').forEach((el) => {
+        el.classList.remove('active');
+    });
+
+    // Select element by data-name and add 'active' class
+    const element = document.querySelector(`[data-name="${value}"]`);
+    if (element) {
+        element.classList.add('active');
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  setActiveByDataValue(sheetName);
+
+  // when button is clicked, load that sheet's data
+  document.querySelectorAll('.tablinks').forEach(button => {
+    button.addEventListener('click', function() {
+      sheetName = this.getAttribute('data-name');
+      setActiveByDataValue(sheetName);
+      drawChart(sheetName, 0);
+      drawChart(sheetName, 1);
+    });
+  });
+});
