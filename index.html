@@ -5,100 +5,20 @@
     <title>Home Climate</title>
     <meta charset="UTF-8">
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <script type="text/javascript">
-      // Load the Visualization API and the corechart package
-      google.charts.load('current', { packages: ['corechart', 'controls', 'line'] });
-
-      // Set a callback to run when the API is loaded
-      google.charts.setOnLoadCallback(drawChart);
-
-      function drawChart() {
-        // URL to fetch Google Sheets data in CSV format (update with your sheet ID and range)
-        const query = new google.visualization.Query(
-          'https://docs.google.com/spreadsheets/d/1xvuWuXq-Sv5DiOpLmMu9FD9NHat3dILGr39eNHIXJsU/gviz/tq?sheet=Humid1&range=A1:C20000'
-        );
-
-        query.send(handleQueryResponse);
-      }
-
-      function handleQueryResponse(response) {
-        if (response.isError()) {
-          console.error('Error fetching data: ' + response.getMessage());
-          return;
-        }
-
-        const data = response.getDataTable();
-
-        // Convert the first column (Datetime) to JavaScript Date objects
-        for (let i = 0; i < data.getNumberOfRows(); i++) {
-          data.setValue(i, 0, new Date(data.getValue(i, 0)));
-        }
-
-        // Create a dashboard
-        const dashboard = new google.visualization.Dashboard(
-          document.getElementById('dashboard_div')
-        );
-
-        // Create a date range filter
-        // n.b. would need to set state: {range.start: and range.end}
-        // in order initialize to it showing the most recent date
-        const dateRangeFilter = new google.visualization.ControlWrapper({
-          controlType: 'ChartRangeFilter',
-          containerId: 'filter_div',
-          options: {
-            filterColumnIndex: 0,
-            ui: {
-              chartType: 'LineChart',
-              chartOptions: {
-                height: 50,
-                hAxis: { format: 'MM/dd/yyyy HH:mm',
-                  'baselineColor': 'none'},
-                chartArea: { 'width': '70%' },
-              },
-              minRangeSize: 0.5*86400000 // 12 hours in milliseconds
-            }
-          }
-        });
-
-        // Create a line chart for temperature and humidity
-        const lineChart = new google.visualization.ChartWrapper({
-          chartType: 'LineChart',
-          containerId: 'chart_div',
-          options: {
-            title: '',
-            curveType: 'function',
-            legend: { position: 'bottom' },
-            hAxis: {
-              title: '',
-              format: 'MM/dd/yyyy HH:mm',
-              gridlines: { count: -1 }
-            },
-            vAxes: {
-              0: { title: 'Humidity (%)', format: 'decimal', textStyle: {color: '#dc3c14'}},
-              1: { title: 'Temperature (°F)', format: 'decimal', textStyle: { color: '#3464cc'}}
-            },
-            series: {
-              0: { targetAxisIndex: 1 }, // Humidity on the first vertical axis
-              1: { targetAxisIndex: 0 }  // Temperature on the second vertical axis
-            }
-          }
-        });
-
-        // Bind the date range filter and the line chart to the dashboard
-        dashboard.bind(dateRangeFilter, lineChart);
-
-        // Draw the dashboard with the data
-        dashboard.draw(data);
-        console.log(data);
-      }
-    </script>
+    <script type="text/javascript" src="plot.js"/></script>
   </head>
   <body>
-    <div id="dashboard_div" style="width: 100%; height: 500px;">
+    <div id="dashboard_div0" style="width: 100%; height: 500px;">
       <!-- Filter control for date range -->
-      <div id="filter_div" style="padding-bottom: 0;"></div>
+      <div id="filter_div0" style="padding-bottom: 0;"></div>
       <!-- Chart container -->
-      <div id="chart_div" style="height: 80%;"></div>
+      <div id="chart_div0" style="height: 80%;"></div>
+    </div>
+    <div id="dashboard_div1" style="width: 100%; height: 500px;">
+      <!-- Filter control for date range -->
+      <div id="filter_div1" style="padding-bottom: 0;"></div>
+      <!-- Chart container -->
+      <div id="chart_div1" style="height: 80%;"></div>
     </div>
   </body>
 </html>
