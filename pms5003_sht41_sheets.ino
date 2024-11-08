@@ -1,24 +1,30 @@
 #include <ESP8266WiFi.h>
 #include <SoftwareSerial.h>
 #include "HTTPSRedirect.h"
+#include <Wire.h>
+#include <Adafruit_SHT4x.h>
+
+Adafruit_SHT4x sht4;
 
 #define PMS_SET_PIN 0 // ESP8266 GPIO0 <-> PMS5003 SET
 SoftwareSerial pmsSerial(2, 3); // RX, TX (ESP8266 GPIO2 <-> PMS5003 TXD; ignore the PMS5003 RXD)
 
 bool pretendToWakeAndSleep = false; // for debugging PMS5003
-const int secsToSleepBetweenLogs = 30; // for PMS5003
-const int logsToAverageOver = 30; // one log each second for PMS5003
+const int secsToSleepBetweenLogs = 5*60; // for PMS5003
+const int secsToStayAwake = 1*60; // for data logging
 
 /*Put your SSID & Password*/
-const char* ssid = "YourSSID"; // TODO: Enter SSID here
-const char* password = "YourPassword"; // TODO: Enter Password here
+const char* ssid = "";     // Enter SSID here
+const char* password = "";  //Enter Password here
 
 // For writing to Google Sheets
 const char *GScriptId = ""; // TODO
 
 // Enter command (insert_row or append_row) and your Google Sheets sheet name (default is Sheet1):
-String payload_base =  "{\"command\": \"append_row\", \"sheet_name\": \"Anole\", \"values\": ";
+String payload_base =  "{\"command\": \"insert_row\", \"sheet_name\": \"Sheet1\", \"values\": ";
 String payload = "";
+String payload_pms5003 = "";
+String payload_sht41 = "";
 
 // Google Sheets setup (do not edit)
 const char* host = "script.google.com";
@@ -74,19 +80,32 @@ void connectToWifi() {
   client = nullptr; // delete HTTPSRedirect object
 }
 
+void setupSHT41() {
+  Wire.begin(D2, D1); // Specify SDA (D2) and SCL (D1) pins for SHT41
+  if (!sht4.begin()) {
+    Serial.println("Couldn't find SHT4x sensor!");
+    while (1) delay(10);
+  }
+  sht4.setPrecision(SHT4X_HIGH_PRECISION);
+  Serial.println("SHT41 Sensor setup complete.");
+}
+
+void setupPMS5003() {
+  pmsSerial.begin(9600); // PMS5003 operates at 9600 baud rate
+  if (!pretendToWakeAndSleep) {
+    // Start PMS5003 in awake mode
+    pinMode(PMS_SET_PIN, OUTPUT);
+    // digitalWrite(PMS_SET_PIN, HIGH);
+  }
+  Serial.println("\nPMS5003 setup complete, and initialized in awake mode.");
+}
+
 void setup() {
   Serial.println("\nBeginning setup...");
   Serial.begin(74880); // Serial for debugging
-
   connectToWifi();
-
-  pmsSerial.begin(9600); // PMS5003 operates at 9600 baud rate
-  if (!pretendToWakeAndSleep) {
-    // Start PMS5003 in sleep mode
-    pinMode(PMS_SET_PIN, OUTPUT);
-    digitalWrite(PMS_SET_PIN, LOW);
-  }
-  Serial.println("\nPMS5003 setup complete, and initialized in sleep mode.");
+  setupPMS5003();
+  setupSHT41();
 }
 
 struct pms5003data {
@@ -100,8 +119,9 @@ struct pms5003data {
  
 struct pms5003data data;
 unsigned long previousMillis = 0;
-bool isAsleep = true;
-int logCount = 0;
+unsigned long awakeMillis = 0;
+bool isAsleep = false;
+// int logCount = 0;
 uint16_t curData[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 // notes: 
@@ -115,19 +135,35 @@ void pmsWake() {
     digitalWrite(PMS_SET_PIN, HIGH);
   }
   isAsleep = false;
+  awakeMillis = millis();
   resetDataPoint();
+  Serial.println("\nPMS5003 is awake.");
 }
 
 void pmsSleep() {
   if (!pretendToWakeAndSleep) {
     digitalWrite(PMS_SET_PIN, LOW);
   }
+  previousMillis = millis();
   isAsleep = true;
-  logCount = 0;
+  // logCount = 0;
+  Serial.println("\nPMS5003 is asleep.");
 }
 
 bool pmsAllEmptyData() {
   return curData[9] == 0;
+}
+
+void printSHT41(sensors_event_t humidity, sensors_event_t temp) {
+  Serial.print("Temperature: ");
+  Serial.print(1.8*temp.temperature + 32);
+  Serial.print(" °F, ");
+  Serial.print(temp.temperature);
+  Serial.println(" °C");
+
+  Serial.print("Humidity: ");
+  Serial.print(humidity.relative_humidity);
+  Serial.println(" %");
 }
 
 void loop() {
@@ -135,12 +171,9 @@ void loop() {
   
   if (isAsleep && (currentMillis - previousMillis >= 1000*secsToSleepBetweenLogs)) {
     pmsWake();
-    Serial.println("\nPMS5003 is awake.");
-
   } else if (!isAsleep) {
     // Read and print data from PMS5003
-    if (readPMSdata(&pmsSerial)) {
-      
+    if (readPMSdata(&pmsSerial)) {      
       // ignore data until we've seen one nonzero value
       if (dataIsEmpty() && pmsAllEmptyData()) {
         // Serial.println("Empty data.");
@@ -148,14 +181,15 @@ void loop() {
         addDataPoint();
         printData();
       }
+    }
 
-      logCount++;
-      if (logCount >= logsToAverageOver) {
-        previousMillis = currentMillis;
-        postToSheets();
-        pmsSleep();
-        Serial.println("\nPMS5003 is asleep.");
-      }
+    if (currentMillis - awakeMillis >= 1000*secsToStayAwake) {
+      // Read and print data from SHT41
+      sensors_event_t humidity, temp;
+      sht4.getEvent(&humidity, &temp);
+      printSHT41(humidity, temp);
+      postToSheets(humidity, temp);
+      pmsSleep();
     }
   }
 }
@@ -193,7 +227,7 @@ void addDataPoint() {
 void printData() {
 
   Serial.println("\n---------------------------------------");
-  Serial.println(logCount);
+  // Serial.println(logCount);
   Serial.print("\nCurrent reading: "); Serial.print(" ");
   Serial.print(data.particles_03um); Serial.print(" ");
   Serial.print(data.particles_05um); Serial.print(" ");
@@ -220,7 +254,7 @@ void printData() {
   }
 }
 
-void postToSheets() {
+void postToSheets(sensors_event_t humidity, sensors_event_t temp) {
   static bool flag = false;
   if (!flag){
     client = new HTTPSRedirect(httpsPort);
@@ -239,7 +273,18 @@ void postToSheets() {
   }
   
   // Create json object string to send to Google Sheets
-  payload = payload_base + "[" + curData[0]/curData[9] + "," + curData[1]/curData[9] + "," + curData[2]/curData[9] + "," + curData[3]/curData[9] + "," + curData[4]/curData[9] + "," + curData[5]/curData[9] + "," + curData[6]/curData[9] + "," + curData[7]/curData[9] + "," + curData[8]/curData[9] + "," + curData[9] + "]}";
+  payload_pms5003 = "";
+  for (int i = 0; i < 9; i++) {
+    if (curData[9] > 0) {
+      payload_pms5003 += String(curData[i] / curData[9]);
+    } else {
+      payload_pms5003 += "\"NaN\"";
+    }
+    payload_pms5003 += ","; // Add a comma after each value except the last one
+  }
+  payload_pms5003 += String(curData[9]);
+  payload_sht41 = String(humidity.relative_humidity) + "," + String(1.8*temp.temperature + 32);
+  payload = payload_base + "[" + payload_pms5003 + "," + payload_sht41 + "]}";
   
   // Publish data to Google Sheets
   Serial.println("\nPublishing data...");
