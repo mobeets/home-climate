@@ -1,14 +1,18 @@
 let sheetName = 'Anole';
 let sheetId = '1xvuWuXq-Sv5DiOpLmMu9FD9NHat3dILGr39eNHIXJsU';
-let chartRanges = ['A1:A20000,B1:G20000', 'A1:A20000,L1:M20000'];
+let chartRanges = ['A1:A20000,B1:G20000', 'A1:A20000,L1:M20000', 'A1:A20000,H1:J20000'];
 let maxParticleCountShown = 1000;
 
 // Load the Visualization API and the corechart package
 google.charts.load('current', { packages: ['corechart', 'controls', 'line'] });
 
-// Set a callback to run when the API is loaded
+// Set callback to run when the API is loaded
+// for (var i = 0; i < chartRanges.length; i++) {
+//   google.charts.setOnLoadCallback(function() { drawChart(sheetName, i); });
+// }
 google.charts.setOnLoadCallback(function() { drawChart(sheetName, 0); });
 google.charts.setOnLoadCallback(function() { drawChart(sheetName, 1); });
+google.charts.setOnLoadCallback(function() { drawChart(sheetName, 2); });
 
 function drawChart(sheetName, chart_index) {
   // URL to fetch Google Sheets data in CSV format (update with your sheet ID and range)
@@ -59,14 +63,20 @@ function handleQueryResponse(response, chart_index) {
     }
   });
 
+  let curMaxParticleCountShown = maxParticleCountShown;
+  let title = 'Counts (per 0.1L air)';
+  if (chart_index === 2) {
+    curMaxParticleCountShown = 20;
+    title = 'Counts (μg/m³)';
+  }
   let vAxes = {
     0:
       {
-        title: 'Counts (per 0.1L air)',
+        title: title,
         format: 'decimal',
         viewWindow: {
           min: 0,
-          max: maxParticleCountShown,
+          max: curMaxParticleCountShown,
         }
       }
     };
@@ -133,6 +143,7 @@ document.addEventListener("DOMContentLoaded", function() {
       setActiveByDataValue(sheetName);
       drawChart(sheetName, 0);
       drawChart(sheetName, 1);
+      drawChart(sheetName, 2);
     });
   });
 });
