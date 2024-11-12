@@ -1,6 +1,7 @@
 let sheetName = 'Anole';
 let sheetId = '1xvuWuXq-Sv5DiOpLmMu9FD9NHat3dILGr39eNHIXJsU';
-let chartRanges = ['A1:A20000,L1:M20000', 'A1:A20000,B1:G20000'];
+let chartRanges = ['A1:A20000,B1:G20000', 'A1:A20000,L1:M20000'];
+let maxParticleCountShown = 1000;
 
 // Load the Visualization API and the corechart package
 google.charts.load('current', { packages: ['corechart', 'controls', 'line'] });
@@ -51,16 +52,26 @@ function handleQueryResponse(response, chart_index) {
           height: 50,
           hAxis: { format: 'MM/dd/yyyy HH:mm',
             'baselineColor': 'none'},
-          chartArea: { 'width': '70%', 'height': '90%' },
+          chartArea: { 'width': '70%', 'height': '70%' },
         },
         minRangeSize: 0.5*86400000 // 12 hours in milliseconds
       }
     }
   });
 
-  let vAxes = {0: {title: 'Counts (per 0.1L air)', format: 'decimal'}};
+  let vAxes = {
+    0:
+      {
+        title: 'Counts (per 0.1L air)',
+        format: 'decimal',
+        viewWindow: {
+          min: 0,
+          max: maxParticleCountShown,
+        }
+      }
+    };
   let series = {};
-  if (chart_index === 0) {
+  if (chart_index === 1) {
     vAxes = {
       0: { title: 'Temperature (°F)', format: 'decimal', textStyle: {color: '#dc3c14'}},
       1: { title: 'Humidity (%)', format: 'decimal', textStyle: { color: '#3464cc'}}
