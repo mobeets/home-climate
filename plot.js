@@ -7,9 +7,6 @@ let maxParticleCountShown = 1000;
 google.charts.load('current', { packages: ['corechart', 'controls', 'line'] });
 
 // Set callback to run when the API is loaded
-// for (var i = 0; i < chartRanges.length; i++) {
-//   google.charts.setOnLoadCallback(function() { drawChart(sheetName, i); });
-// }
 google.charts.setOnLoadCallback(function() { drawChart(sheetName, 0); });
 google.charts.setOnLoadCallback(function() { drawChart(sheetName, 1); });
 google.charts.setOnLoadCallback(function() { drawChart(sheetName, 2); });
@@ -42,12 +39,20 @@ function handleQueryResponse(response, chart_index) {
     document.getElementById('dashboard_div' + chart_index.toString())
   );
 
+  // get the current time and prev time in milliseconds
+  const now = new Date();
+  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
   // Create a date range filter
-  // n.b. would need to set state: {range.start: and range.end}
-  // in order initialize to it showing the most recent date
   const dateRangeFilter = new google.visualization.ControlWrapper({
     controlType: 'ChartRangeFilter',
     containerId: 'filter_div' + chart_index.toString(),
+    state: {
+      range: {
+        start: oneDayAgo,
+        end: now
+      }
+    },
     options: {
       filterColumnIndex: 0,
       ui: {
@@ -83,8 +88,24 @@ function handleQueryResponse(response, chart_index) {
   let series = {};
   if (chart_index === 1) {
     vAxes = {
-      0: { title: 'Temperature (°F)', format: 'decimal', textStyle: {color: '#dc3c14'}},
-      1: { title: 'Humidity (%)', format: 'decimal', textStyle: { color: '#3464cc'}}
+      0: {
+          title: 'Temperature (°F)',
+          format: 'decimal',
+          viewWindow: {
+            min: 65,
+            max: 80,
+          },
+          textStyle: {color: '#dc3c14'},
+        },
+      1: {
+          title: 'Humidity (%)',
+          format: 'decimal',
+          viewWindow: {
+            min: 35,
+            max: 65,
+          },
+          textStyle: { color: '#3464cc'}
+        }
     };
     series = {
         1: { targetAxisIndex: 0 },  // Temperature on the second vertical axis
